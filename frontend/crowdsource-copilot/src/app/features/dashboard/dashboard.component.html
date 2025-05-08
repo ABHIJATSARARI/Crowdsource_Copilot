@@ -1,0 +1,291 @@
+<div class="dashboard-container tech-grid">
+  <!-- Futuristic AI pattern overlay -->
+  <div class="ai-pattern"></div>
+  <div class="neural-grid"></div>
+
+  <header class="dashboard-header">
+    <div class="title-area">
+      <h1 class="neon-text">Dashboard</h1>
+      <div class="header-stats">
+        <div class="stat-badge" *ngFor="let stat of stats; let i = index" [@staggeredFade]="getAnimationDelay(i)">
+          <div class="stat-icon">
+            <mat-icon>{{stat.icon}}</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{stat.value}}</div>
+            <div class="stat-label">{{stat.label}}</div>
+          </div>
+          <div class="stat-trend" [class.trend-up]="stat.isUp" [class.trend-down]="!stat.isUp">
+            {{stat.trend}}
+            <mat-icon>{{stat.isUp ? 'trending_up' : 'trending_down'}}</mat-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="action-buttons">
+      <button mat-flat-button class="neon-button" (click)="startNewChallenge()">
+        <mat-icon>add</mat-icon> New Challenge
+      </button>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <div class="dashboard-stats">
+      <div class="metric-card" @cardEnter>
+        <div class="metric-icon">
+          <mat-icon>folder</mat-icon>
+        </div>
+        <div class="metric-title">Projects</div>
+        <div class="metric-value neon-text">{{ projectCount || 0 }}</div>
+        <div class="metric-change positive">
+          <mat-icon>arrow_upward</mat-icon> 3 new this month
+        </div>
+      </div>
+      
+      <div class="metric-card" @cardEnter>
+        <div class="metric-icon">
+          <mat-icon>task_alt</mat-icon>
+        </div>
+        <div class="metric-title">Tasks</div>
+        <div class="metric-value neon-text">{{ taskCount || 0 }}</div>
+        <div class="metric-change positive">
+          <mat-icon>arrow_upward</mat-icon> 12 pending
+        </div>
+      </div>
+      
+      <div class="metric-card" @cardEnter>
+        <div class="metric-icon">
+          <mat-icon>groups</mat-icon>
+        </div>
+        <div class="metric-title">Contributors</div>
+        <div class="metric-value neon-text">{{ contributorCount || 0 }}</div>
+        <div class="metric-change positive">
+          <mat-icon>arrow_upward</mat-icon> 5 new contributors
+        </div>
+      </div>
+    </div>
+    
+    <div class="dashboard-main">
+      <div class="tab-section">
+        <mat-tab-group animationDuration="300ms" class="futuristic-tabs">
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <div class="custom-tab">
+                <mat-icon>dashboard</mat-icon>
+                <span>My Challenges</span>
+                <div class="tab-counter">{{myChallenges.length}}</div>
+              </div>
+            </ng-template>
+            
+            <div class="challenges-grid">
+              <mat-card class="neon-card challenge-card" *ngFor="let challenge of myChallenges; let i = index" 
+                [class]="getCardClass(i)" @fadeIn>
+                <mat-card-header>
+                  <div mat-card-avatar class="challenge-icon">
+                    <mat-icon>{{ getChallengeIcon(challenge.type) }}</mat-icon>
+                  </div>
+                  <mat-card-title>{{ challenge.title }}</mat-card-title>
+                  <mat-card-subtitle>
+                    <!-- Status moved to right side -->
+                    <div class="status-chip" [ngClass]="'status-' + challenge.status">
+                      <span class="status-dot"></span>
+                      {{ challenge.status | titlecase }}
+                    </div>
+                  </mat-card-subtitle>
+                </mat-card-header>
+                
+                <mat-card-content>
+                  <p class="challenge-summary" *ngIf="challenge.summary">{{ challenge.summary }}</p>
+                  
+                  <div class="challenge-meta" *ngIf="challenge.startDate">
+                    <span class="meta-item">
+                      <mat-icon>calendar_today</mat-icon>
+                      {{ challenge.startDate | date:'MMM d' }} - {{ challenge.endDate | date:'MMM d, y' }}
+                    </span>
+                  </div>
+                  
+                  <div class="challenge-tags">
+                    <div class="tag" *ngFor="let tag of challenge.tags">{{ tag }}</div>
+                  </div>
+                  
+                  <div class="progress-container" *ngIf="challenge.progress !== undefined">
+                    <div class="progress-info">
+                      <span class="progress-label">Progress</span>
+                      <span class="progress-percentage">{{ challenge.progress }}%</span>
+                    </div>
+                    <div class="neon-progress">
+                      <div class="progress-fill" [style.width.%]="challenge.progress"></div>
+                    </div>
+                  </div>
+                  
+                  <div class="stats-container" *ngIf="challenge.participants">
+                    <div class="stat-item">
+                      <mat-icon>people</mat-icon>
+                      <span>{{ challenge.participants }}</span>
+                    </div>
+                    <div class="stat-item" *ngIf="challenge.submissionCount">
+                      <mat-icon>upload_file</mat-icon>
+                      <span>{{ challenge.submissionCount }}</span>
+                    </div>
+                  </div>
+                </mat-card-content>
+                
+                <mat-card-actions align="end" class="card-actions">
+                  <button mat-icon-button [matMenuTriggerFor]="menu" class="action-button" matTooltip="More options">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="viewChallenge(challenge)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>View Details</span>
+                    </button>
+                    <button mat-menu-item (click)="editChallenge(challenge)" *ngIf="challenge.status !== 'completed'">
+                      <mat-icon>edit</mat-icon>
+                      <span>Edit</span>
+                    </button>
+                    <button mat-menu-item (click)="duplicateChallenge(challenge.id)">
+                      <mat-icon>content_copy</mat-icon>
+                      <span>Duplicate</span>
+                    </button>
+                    <button mat-menu-item (click)="exportChallenge(challenge.id)">
+                      <mat-icon>download</mat-icon>
+                      <span>Export</span>
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button mat-menu-item (click)="deleteChallenge(challenge)" *ngIf="challenge.status === 'draft'" class="delete-action">
+                      <mat-icon>delete</mat-icon>
+                      <span>Delete</span>
+                    </button>
+                  </mat-menu>
+                  
+                  <button mat-button class="view-button" (click)="viewChallenge(challenge)">
+                    <mat-icon>visibility</mat-icon> View
+                  </button>
+                </mat-card-actions>
+              </mat-card>
+              
+              <!-- Empty state -->
+              <div class="empty-state" *ngIf="myChallenges.length === 0">
+                <mat-icon class="empty-icon">search_off</mat-icon>
+                <h3>No Challenges Found</h3>
+                <p>You don't have any challenges yet. Create your first challenge to get started.</p>
+                <button mat-flat-button class="neon-button" (click)="startNewChallenge()">
+                  <mat-icon>add</mat-icon> Create Challenge
+                </button>
+              </div>
+            </div>
+          </mat-tab>
+          
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <div class="custom-tab">
+                <mat-icon>explore</mat-icon>
+                <span>Explore</span>
+              </div>
+            </ng-template>
+            
+            <div class="challenges-grid">
+              <!-- Empty state -->
+              <div class="empty-state" *ngIf="exploreChallenges.length === 0">
+                <mat-icon class="empty-icon">public</mat-icon>
+                <h3>Discover Challenges</h3>
+                <p>Explore challenges from other organizers or browse templates.</p>
+                <button mat-flat-button class="neon-button secondary">
+                  <mat-icon>search</mat-icon> Browse Templates
+                </button>
+              </div>
+            </div>
+          </mat-tab>
+          
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <div class="custom-tab">
+                <mat-icon>insights</mat-icon>
+                <span>Analytics</span>
+              </div>
+            </ng-template>
+            
+            <div class="analytics-placeholder">
+              <div class="glass-panel">
+                <h3 class="neon-text">Challenge Analytics</h3>
+                <p>Detailed analytics coming soon. Track engagement, submissions, and results.</p>
+                <div class="placeholder-chart"></div>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </div>
+    </div>
+
+    <div class="dashboard-sidebar">
+      <div class="sidebar-section activity-section glass-panel">
+        <h2><mat-icon>history</mat-icon> Recent Activity</h2>
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let activity of recentActivity; let i = index" 
+              [@staggeredFade]="getAnimationDelay(i)">
+            <div class="activity-icon data-stream">
+              <mat-icon>{{ activity.icon }}</mat-icon>
+            </div>
+            <div class="activity-details">
+              <h3>{{ activity.title }}</h3>
+              <p>{{ activity.description }}</p>
+              <span class="activity-time">{{ activity.timestamp | date:'MMM d, h:mm a' }}</span>
+            </div>
+          </div>
+          
+          <div class="empty-state mini" *ngIf="!recentActivity?.length">
+            <mat-icon>notifications_none</mat-icon>
+            <p>No recent activity to display</p>
+          </div>
+        </div>
+        
+        <div class="see-all-link">
+          <a routerLink="/activity">See all activity <mat-icon>arrow_forward</mat-icon></a>
+        </div>
+      </div>
+      
+      <div class="sidebar-section quick-actions-section glass-panel">
+        <h2><mat-icon>bolt</mat-icon> Quick Actions</h2>
+        <div class="quick-actions-grid">
+          <button mat-stroked-button class="action-button" (click)="createNewProject()">
+            <mat-icon>add</mat-icon>
+            <span>New Challenge</span>
+          </button>
+          <button mat-stroked-button class="action-button" (click)="inviteContributors()">
+            <mat-icon>person_add</mat-icon>
+            <span>Invite</span>
+          </button>
+          <button mat-stroked-button class="action-button" (click)="viewReports()">
+            <mat-icon>assessment</mat-icon>
+            <span>Reports</span>
+          </button>
+          <button mat-stroked-button class="action-button">
+            <mat-icon>help_outline</mat-icon>
+            <span>Help</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New user welcome message - only show for new users -->
+  <div class="welcome-panel glass-panel" *ngIf="isNewUser" @slideIn>
+    <div class="welcome-content">
+      <h2 class="neon-text">Welcome to Crowdsource Copilot!</h2>
+      <p>Get started with your first innovation challenge in minutes.</p>
+      <div class="welcome-actions">
+        <button mat-flat-button class="neon-button" (click)="startNewChallenge()">
+          <mat-icon>add</mat-icon> Create Challenge
+        </button>
+        <button mat-stroked-button color="primary" (click)="showTutorial()">
+          <mat-icon>play_circle</mat-icon> Watch Tutorial
+        </button>
+      </div>
+    </div>
+    <button mat-icon-button class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <app-ai-assistant [context]="'dashboard'" class="dashboard-assistant"></app-ai-assistant>
+</div>
